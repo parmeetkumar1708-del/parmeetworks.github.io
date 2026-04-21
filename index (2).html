@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIHONGO // N5 PROTOCOL</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CORE VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root{
+  --void:#000000;
+  --deep:#060608;
+  --abyss:#0a0006;
+  --cr:#cc0022;       /* crimson */
+  --cr2:#ff0033;      /* hot red */
+  --cr3:#8b0015;      /* dark crimson */
+  --cr4:rgba(204,0,34,.12);
+  --cr5:rgba(204,0,34,.06);
+  --gl:rgba(255,255,255,.03);   /* glass */
+  --gl2:rgba(255,255,255,.06);
+  --gl3:rgba(255,255,255,.09);
+  --bdr:rgba(204,0,34,.25);     /* border */
+  --bdr2:rgba(204,0,34,.5);
+  --bdr3:rgba(255,255,255,.08);
+  --txt:#f0e0e4;       /* text */
+  --txt2:rgba(240,224,228,.55);
+  --txt3:rgba(240,224,228,.3);
+  --scan:rgba(255,0,0,.015);
+  --glow:0 0 20px rgba(204,0,34,.35);
+  --glow2:0 0 40px rgba(204,0,34,.2),0 0 80px rgba(204,0,34,.08);
+  --font-h:'Orbitron',monospace;
+  --font-b:'Rajdhani',sans-serif;
+  --font-j:'Noto Sans JP',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:var(--font-b);
+  background:var(--void);
+  color:var(--txt);
+  min-height:100vh;
+  overflow-x:hidden;
+  cursor:default;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GLOBAL BG SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bg-grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(204,0,34,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(204,0,34,.04) 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse at center,black 20%,transparent 80%);
+}
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);animation:orbDrift linear infinite}
+.orb1{width:400px;height:400px;background:radial-gradient(ellipse,rgba(180,0,30,.18),transparent 70%);top:-100px;left:-100px;animation-duration:20s}
+.orb2{width:300px;height:300px;background:radial-gradient(ellipse,rgba(204,0,34,.12),transparent 70%);bottom:-80px;right:-80px;animation-duration:25s;animation-direction:reverse}
+.orb3{width:200px;height:200px;background:radial-gradient(ellipse,rgba(140,0,20,.1),transparent 70%);top:50%;left:60%;animation-duration:18s;animation-delay:-8s}
+@keyframes orbDrift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.08)}66%{transform:translate(-20px,30px) scale(.95)}100%{transform:translate(0,0) scale(1)}}
+
+/* Scanlines */
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);
+  animation:scanShift 8s linear infinite;
+}
+@keyframes scanShift{0%{background-position:0 0}100%{background-position:0 100px}}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PAGE SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.page{
+  display:none;min-height:100vh;
+  flex-direction:column;
+  position:relative;z-index:2;
+  animation:pgIn .4s cubic-bezier(.4,0,.2,1);
+}
+.page.active{display:flex}
+@keyframes pgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GLASS COMPONENT SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.glass{
+  background:linear-gradient(135deg,rgba(20,0,5,.85),rgba(10,0,3,.9));
+  backdrop-filter:blur(20px) saturate(1.5);
+  -webkit-backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--bdr);
+  position:relative;
+  overflow:hidden;
+}
+.glass::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(204,0,34,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.glass-red{
+  background:linear-gradient(135deg,rgba(120,0,20,.6),rgba(60,0,10,.8));
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--bdr2);
+  box-shadow:var(--glow),inset 0 1px 0 rgba(255,60,60,.15);
+}
+.glass-dark{
+  background:linear-gradient(135deg,rgba(8,0,3,.95),rgba(5,0,2,.98));
+  backdrop-filter:blur(30px);
+  -webkit-backdrop-filter:blur(30px);
+  border:1px solid var(--bdr3);
+}
+
+/* Corner brackets */
+.bracket::before,.bracket::after,
+.bracket-inner::before,.bracket-inner::after{
+  content:'';position:absolute;width:14px;height:14px;
+  border-color:var(--cr2);border-style:solid;
+}
+.bracket::before{top:0;left:0;border-width:1.5px 0 0 1.5px;border-radius:1px 0 0 0}
+.bracket::after{top:0;right:0;border-width:1.5px 1.5px 0 0;border-radius:0 1px 0 0}
+.bracket-inner::before{bottom:0;left:0;border-width:0 0 1.5px 1.5px;border-radius:0 0 0 1px}
+.bracket-inner::after{bottom:0;right:0;border-width:0 1.5px 1.5px 0;border-radius:0 0 1px 0}
+
+/* Red line decoration */
+.redline{
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--cr2),transparent);
+  margin:0;
+}
+.redline-v{
+  width:1px;
+  background:linear-gradient(180deg,transparent,var(--cr2),transparent);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PREMIUM SVG ICON SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.ico{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ico svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TYPOGRAPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.h1{font-family:var(--font-h);font-size:clamp(1.8rem,6vw,2.8rem);font-weight:900;letter-spacing:.05em;line-height:1.1}
+.h2{font-family:var(--font-h);font-size:clamp(1rem,3vw,1.4rem);font-weight:700;letter-spacing:.08em}
+.h3{font-family:var(--font-h);font-size:.85rem;font-weight:600;letter-spacing:.1em}
+.mono{font-family:var(--font-h);font-size:.7rem;letter-spacing:.12em;color:var(--txt3)}
+.kana-display{font-family:var(--font-j);font-weight:900}
+.cr{color:var(--cr2)}
+
+/* Glitch text */
+.glitch{position:relative}
+.glitch::before,.glitch::after{
+  content:attr(data-text);position:absolute;inset:0;
+  color:var(--cr2);clip-path:polygon(0 0,100% 0,100% 33%,0 33%);
+}
+.glitch::before{left:2px;animation:glitch1 3s infinite}
+.glitch::after{left:-2px;animation:glitch2 3s infinite;clip-path:polygon(0 67%,100% 67%,100% 100%,0 100%)}
+@keyframes glitch1{0%,90%,100%{opacity:0;transform:none}92%{opacity:.8;transform:translateX(-3px)}94%{opacity:0}}
+@keyframes glitch2{0%,94%,100%{opacity:0;transform:none}96%{opacity:.8;transform:translateX(3px)}98%{opacity:0}}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SPLASH PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#splash{
+  align-items:center;justify-content:center;
+  padding:40px 24px;text-align:center;
+  min-height:100vh;position:relative;
+}
+
+.splash-logo-ring{
+  width:140px;height:140px;margin:0 auto 28px;
+  position:relative;
+  animation:ringPulse 3s ease-in-out infinite;
+}
+@keyframes ringPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.splash-logo-ring svg{width:100%;height:100%}
+
+.splash-tagline{
+  font-family:var(--font-h);font-size:.65rem;
+  letter-spacing:.3em;color:var(--cr2);
+  margin-bottom:16px;
+  text-transform:uppercase;
+}
+.splash-title{margin-bottom:6px}
+.splash-title .line1{
+  font-family:var(--font-h);font-size:clamp(2rem,8vw,3.2rem);
+  font-weight:900;color:var(--txt);letter-spacing:.06em;display:block;
+}
+.splash-title .line2{
+  font-family:var(--font-j);font-size:clamp(2.5rem,10vw,4rem);
+  font-weight:900;color:var(--cr2);display:block;
+  text-shadow:0 0 30px rgba(255,0,51,.5);
+  animation:kanaPulse 2s ease-in-out infinite;
+}
+@keyframes kanaPulse{0%,100%{text-shadow:0 0 30px rgba(255,0,51,.5)}50%{text-shadow:0 0 50px rgba(255,0,51,.8),0 0 80px rgba(255,0,51,.3)}}
+
+.splash-div{
+  width:200px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cr2),transparent);
+  margin:20px auto;
+}
+.splash-sub{
+  font-size:1rem;font-weight:500;color:var(--txt2);
+  max-width:340px;margin:0 auto 32px;line-height:1.7;letter-spacing:.02em;
+}
+.splash-sub span{color:var(--cr2);font-weight:700}
+
+.feat-row{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  max-width:380px;margin:0 auto 36px;
+}
+.feat{
+  padding:10px 14px;border-radius:6px;
+  background:var(--cr5);border:1px solid var(--bdr);
+  display:flex;align-items:center;gap:10px;
+  text-align:left;
+}
+.feat-ico{
+  width:28px;height:28px;border-radius:4px;
+  background:var(--cr4);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--cr2);
+}
+.feat-txt{font-size:.75rem;font-weight:600;color:var(--txt2);letter-spacing:.03em}
+
+.start-btn{
+  position:relative;max-width:340px;width:100%;
+  padding:18px 32px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.85rem;font-weight:700;
+  letter-spacing:.15em;color:#fff;
+  background:linear-gradient(135deg,var(--cr3),var(--cr),var(--cr3));
+  background-size:200% 100%;
+  box-shadow:0 0 0 1px var(--bdr2),var(--glow);
+  transition:.3s;overflow:hidden;
+  animation:btnGlow 2s ease-in-out infinite;
+}
+@keyframes btnGlow{0%,100%{box-shadow:0 0 0 1px var(--bdr2),0 0 20px rgba(204,0,34,.35)}50%{box-shadow:0 0 0 1px var(--bdr2),0 0 40px rgba(204,0,34,.6),0 0 60px rgba(204,0,34,.2)}}
+.start-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.1),transparent,rgba(255,255,255,.05));
+  pointer-events:none;
+}
+.start-btn::after{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  transition:.4s;
+}
+.start-btn:hover::after{left:100%}
+.start-btn:hover{transform:translateY(-2px);background-position:100% 0}
+.start-btn:active{transform:translateY(1px)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HOME PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#home{padding-bottom:80px}
+
+.home-header{
+  padding:20px 16px 28px;
+  background:linear-gradient(180deg,rgba(120,0,20,.4) 0%,transparent 100%);
+  border-bottom:1px solid var(--bdr);
+  position:relative;
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo-mark{
+  font-family:var(--font-h);font-size:.95rem;font-weight:800;
+  letter-spacing:.12em;color:var(--txt);
+  display:flex;align-items:center;gap:8px;
+}
+.logo-mark .slash{color:var(--cr2)}
+.logo-mark .ver{font-size:.55rem;color:var(--txt3);letter-spacing:.15em}
+
+.status-bar{display:flex;gap:8px}
+.status-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:4px;
+  background:var(--cr4);border:1px solid var(--bdr);
+  font-family:var(--font-h);font-size:.65rem;font-weight:600;
+  letter-spacing:.08em;color:var(--cr2);
+}
+.status-chip .val{color:var(--txt);font-weight:700}
+
+/* User panel */
+.user-panel{
+  padding:16px 18px;border-radius:8px;
+  display:flex;align-items:center;gap:14px;
+}
+.avatar-ring{
+  width:52px;height:52px;flex-shrink:0;
+  position:relative;
+}
+.avatar-ring svg{width:100%;height:100%;animation:avatarSpin 8s linear infinite}
+@keyframes avatarSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.avatar-core{
+  position:absolute;inset:8px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cr3),rgba(80,0,15,.8));
+  border:1px solid var(--bdr2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-j);font-size:1rem;font-weight:900;color:var(--cr2);
+}
+.user-data{flex:1}
+.user-title{font-family:var(--font-h);font-size:.8rem;font-weight:700;letter-spacing:.06em;color:var(--txt);margin-bottom:4px}
+.user-sub{font-size:.72rem;color:var(--txt3);letter-spacing:.04em;margin-bottom:8px}
+.xp-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;position:relative}
+.xp-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cr3),var(--cr2));transition:width 1s cubic-bezier(.4,0,.2,1);position:relative}
+.xp-fill::after{content:'';position:absolute;top:0;left:0;right:0;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)} }
+.xp-label{font-size:.6rem;color:var(--txt3);letter-spacing:.08em;margin-top:4px;font-family:var(--font-h)}
+
+/* Stats grid */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:8px;padding:12px 16px;
+}
+.stat-cell{
+  padding:14px 10px;border-radius:6px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.stat-cell::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cr2),transparent)}
+.stat-v{font-family:var(--font-h);font-size:1.3rem;font-weight:800;color:var(--cr2);display:block;text-shadow:0 0 12px rgba(255,0,51,.4)}
+.stat-l{font-size:.62rem;font-weight:600;color:var(--txt3);letter-spacing:.1em;margin-top:2px;display:block}
+
+/* Section head */
+.sec-label{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px 8px;
+}
+.sec-label .line{flex:1;height:1px;background:linear-gradient(90deg,var(--bdr),transparent)}
+.sec-label span{font-family:var(--font-h);font-size:.65rem;font-weight:600;letter-spacing:.14em;color:var(--cr2)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ROADMAP SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.roadmap-h{
+  display:flex;gap:10px;padding:0 16px 4px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.roadmap-h::-webkit-scrollbar{display:none}
+
+.road-card{
+  min-width:148px;padding:16px 14px;border-radius:8px;
+  cursor:pointer;transition:.25s;flex-shrink:0;
+  position:relative;overflow:hidden;
+}
+.road-card:not(.locked):hover{transform:translateY(-3px);box-shadow:var(--glow2)}
+.road-card:not(.locked):active{transform:scale(.97)}
+.road-card.locked{opacity:.4;cursor:not-allowed}
+
+.rc-num{
+  font-family:var(--font-h);font-size:.55rem;font-weight:600;
+  letter-spacing:.16em;color:rgba(255,255,255,.4);
+  margin-bottom:10px;
+}
+.rc-symbol{
+  width:38px;height:38px;margin-bottom:10px;
+  color:rgba(255,255,255,.9);
+}
+.rc-title{font-family:var(--font-h);font-size:.78rem;font-weight:700;letter-spacing:.06em;color:#fff;margin-bottom:4px}
+.rc-desc{font-size:.7rem;font-weight:500;color:rgba(255,255,255,.65);line-height:1.4;margin-bottom:10px}
+.rc-bar{height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+.rc-bar-fill{height:100%;background:rgba(255,255,255,.8);border-radius:2px;transition:width 1s}
+.rc-status{
+  position:absolute;top:12px;right:12px;
+  width:18px;height:18px;color:rgba(255,255,255,.6);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LESSON LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.lesson-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.lesson-row{
+  padding:14px 16px;border-radius:8px;
+  display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+}
+.lesson-row::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--bdr),transparent);
+}
+.lesson-row:hover{background:var(--cr4)!important;transform:translateX(3px)}
+.lesson-row.locked-r{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+.l-sym{
+  width:44px;height:44px;border-radius:6px;flex-shrink:0;
+  background:var(--cr4);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--cr2);
+}
+.l-info{flex:1}
+.l-name{font-family:var(--font-h);font-size:.78rem;font-weight:700;letter-spacing:.05em;color:var(--txt);margin-bottom:3px}
+.l-meta{font-size:.72rem;font-weight:500;color:var(--txt3);letter-spacing:.02em}
+.l-badge{
+  padding:3px 10px;border-radius:3px;
+  font-family:var(--font-h);font-size:.58rem;font-weight:600;letter-spacing:.08em;
+}
+.badge-done{background:rgba(0,180,60,.12);border:1px solid rgba(0,180,60,.3);color:#00cc44}
+.badge-active{background:var(--cr4);border:1px solid var(--bdr2);color:var(--cr2)}
+.badge-lock{background:var(--gl);border:1px solid var(--bdr3);color:var(--txt3)}
+.l-chevron{color:var(--txt3);flex-shrink:0}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BOTTOM NAV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bnav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:rgba(4,0,2,.95);
+  border-top:1px solid var(--bdr);
+  backdrop-filter:blur(20px);
+  display:flex;justify-content:space-around;
+  padding:8px 0 14px;z-index:100;
+}
+.bn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-family:var(--font-h);font-size:.52rem;font-weight:600;
+  letter-spacing:.1em;color:var(--txt3);
+  cursor:pointer;padding:6px 16px;border-radius:4px;
+  background:none;border:none;transition:.2s;
+}
+.bn.on{color:var(--cr2)}
+.bn.on .bn-ico{color:var(--cr2);filter:drop-shadow(0 0 6px rgba(255,0,51,.5))}
+.bn-ico{width:20px;height:20px;transition:.2s}
+.bn:active{transform:scale(.88)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LESSON PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#lesson{background:var(--void);max-width:480px;margin:0 auto}
+.lesson-topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 16px 10px;
+}
+.back-x{
+  width:36px;height:36px;border-radius:4px;
+  background:var(--cr4);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--cr2);transition:.15s;flex-shrink:0;
+}
+.back-x:hover{background:rgba(204,0,34,.2);box-shadow:var(--glow)}
+.prog-track{
+  flex:1;height:6px;background:rgba(255,255,255,.05);
+  border-radius:3px;overflow:hidden;border:1px solid var(--bdr3);
+}
+.prog-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--cr3),var(--cr2));
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 8px rgba(204,0,34,.5);
+}
+.hp-row{display:flex;gap:5px;flex-shrink:0}
+.hp{width:16px;height:16px;flex-shrink:0}
+
+/* Q zone */
+.q-zone{flex:1;padding:12px 16px 16px;overflow-y:auto;display:flex;flex-direction:column}
+.q-zone::-webkit-scrollbar{display:none}
+
+.q-type-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:4px;
+  background:var(--cr4);border:1px solid var(--bdr);
+  font-family:var(--font-h);font-size:.62rem;font-weight:600;
+  letter-spacing:.1em;color:var(--cr2);
+  margin-bottom:18px;align-self:flex-start;
+  animation:tagSlide .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes tagSlide{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Big character display */
+.char-display{
+  text-align:center;margin-bottom:20px;
+  padding:28px 20px;border-radius:8px;
+  position:relative;overflow:hidden;cursor:pointer;
+  animation:charIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes charIn{from{transform:scale(.85) rotateX(15deg);opacity:0}to{transform:scale(1) rotateX(0);opacity:1}}
+.char-display::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(204,0,34,.08),transparent 70%),
+    linear-gradient(135deg,rgba(20,0,5,.9),rgba(10,0,3,.95));
+}
+.char-display .char-kana{
+  font-family:var(--font-j);
+  font-size:clamp(3.5rem,14vw,5.5rem);
+  font-weight:900;color:var(--txt);
+  display:block;line-height:1;margin-bottom:8px;
+  position:relative;z-index:1;
+  text-shadow:0 0 30px rgba(255,50,50,.2);
+  animation:float 3s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.char-display .char-rom{
+  font-family:var(--font-h);font-size:.8rem;font-weight:700;
+  letter-spacing:.12em;color:var(--cr2);
+  display:block;position:relative;z-index:1;margin-bottom:4px;
+}
+.char-display .char-hint{
+  font-size:.72rem;font-weight:500;color:var(--txt3);
+  display:block;position:relative;z-index:1;letter-spacing:.04em;
+}
+.char-display .tap-note{
+  font-family:var(--font-h);font-size:.55rem;letter-spacing:.12em;
+  color:var(--bdr2);display:block;position:relative;z-index:1;
+  margin-top:10px;
+}
+
+/* Q instruction */
+.q-instr{
+  font-family:var(--font-h);font-size:.82rem;font-weight:600;
+  letter-spacing:.04em;color:var(--txt2);
+  margin-bottom:16px;line-height:1.5;
+}
+.jp-block{
+  font-family:var(--font-j);font-size:1.3rem;font-weight:700;
+  color:var(--txt);display:block;margin-top:8px;
+  padding:12px 16px;border-radius:6px;
+  background:var(--cr5);border:1px solid var(--bdr);
+  border-left:3px solid var(--cr2);
+  letter-spacing:.05em;
+}
+.hint-block{
+  font-family:var(--font-b);font-size:.8rem;font-weight:500;
+  color:rgba(255,180,100,.8);display:block;margin-top:8px;
+  padding:8px 12px;border-radius:4px;
+  background:rgba(255,150,0,.06);border:1px solid rgba(255,150,0,.2);
+  letter-spacing:.02em;
+}
+
+/* Options */
+.opts{display:grid;gap:8px;margin-bottom:12px}
+.opts.two{grid-template-columns:1fr 1fr}
+.opt{
+  padding:14px 14px;border-radius:6px;
+  background:linear-gradient(135deg,rgba(15,0,5,.8),rgba(8,0,3,.9));
+  border:1px solid var(--bdr3);
+  font-family:var(--font-b);font-size:.95rem;font-weight:600;
+  color:var(--txt);cursor:pointer;transition:.15s;text-align:left;
+  display:flex;align-items:center;gap:10px;
+  letter-spacing:.02em;
+  position:relative;overflow:hidden;
+}
+.opt::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(204,0,34,.05),transparent);
+  opacity:0;transition:.2s;
+}
+.opt:hover:not(:disabled){
+  border-color:var(--bdr);background:rgba(204,0,34,.08);
+  box-shadow:0 0 0 1px var(--bdr);
+}
+.opt:hover:not(:disabled)::before{opacity:1}
+.opt.sel{
+  border-color:var(--bdr2);
+  background:rgba(204,0,34,.12);
+  box-shadow:0 0 0 1px var(--bdr2),var(--glow);
+}
+.opt.ok{
+  border-color:rgba(0,200,80,.5)!important;
+  background:rgba(0,180,60,.08)!important;
+  box-shadow:0 0 0 1px rgba(0,200,80,.3),0 0 16px rgba(0,180,60,.1)!important;
+  color:#00dd55;
+}
+.opt.bad{
+  border-color:var(--bdr2)!important;
+  background:rgba(204,0,34,.15)!important;
+  box-shadow:0 0 0 1px var(--bdr2),var(--glow)!important;
+  color:var(--cr2);
+}
+.opt:disabled{cursor:default}
+.opt-glyph{
+  width:26px;height:26px;border-radius:3px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-h);font-size:.68rem;font-weight:700;
+  color:var(--txt3);flex-shrink:0;transition:.2s;
+}
+.opt.sel .opt-glyph{background:var(--cr4);border-color:var(--bdr2);color:var(--cr2)}
+.opt.ok .opt-glyph{background:rgba(0,180,60,.15);border-color:rgba(0,200,80,.4);color:#00dd55}
+.opt.bad .opt-glyph{background:var(--cr4);border-color:var(--bdr2);color:var(--cr2)}
+.opt .jp-opt{font-family:var(--font-j);font-size:1.2rem;font-weight:700}
+.opt .rom-small{font-size:.68rem;color:var(--txt3);display:block;font-family:var(--font-h);letter-spacing:.06em;margin-top:1px}
+
+/* Flashcard */
+.fc-wrap{perspective:1000px;margin-bottom:16px;cursor:pointer}
+.flashcard{width:100%;min-height:200px;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);border-radius:8px}
+.flashcard.flipped{transform:rotateY(180deg)}
+.fc-f,.fc-b{
+  position:absolute;inset:0;border-radius:8px;
+  backface-visibility:hidden;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:28px 20px;text-align:center;
+}
+.fc-f{
+  background:linear-gradient(135deg,rgba(30,0,8,.95),rgba(15,0,5,.98));
+  border:1px solid var(--bdr);
+}
+.fc-f::before{
+  content:'';position:absolute;inset:0;border-radius:8px;
+  background:radial-gradient(ellipse at 50% 30%,rgba(204,0,34,.08),transparent 60%);
+}
+.fc-f .fk{font-family:var(--font-j);font-size:4rem;font-weight:900;color:var(--txt);display:block;margin-bottom:10px;position:relative;z-index:1;animation:float 3s ease-in-out infinite}
+.fc-f .fr{font-family:var(--font-h);font-size:.75rem;font-weight:600;letter-spacing:.12em;color:var(--cr2);position:relative;z-index:1}
+.fc-b{
+  background:linear-gradient(135deg,rgba(120,0,20,.6),rgba(80,0,15,.8));
+  border:1px solid var(--bdr2);
+  box-shadow:var(--glow),inset 0 1px 0 rgba(255,60,60,.1);
+  transform:rotateY(180deg);
+}
+.fc-b::before{
+  content:'';position:absolute;inset:0;border-radius:8px;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,0,51,.06),transparent);
+}
+.fc-b .fa{font-family:var(--font-h);font-size:1.5rem;font-weight:800;letter-spacing:.06em;color:#fff;display:block;margin-bottom:10px;position:relative;z-index:1}
+.fc-b .fh{font-size:.82rem;font-weight:500;color:rgba(255,200,210,.8);line-height:1.6;position:relative;z-index:1;letter-spacing:.02em}
+.tap-indicator{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--font-h);font-size:.58rem;letter-spacing:.12em;
+  color:var(--txt3);margin-bottom:12px;
+}
+
+/* Arrange */
+.ans-track{
+  min-height:52px;border-bottom:1px solid var(--bdr);
+  display:flex;flex-wrap:wrap;gap:7px;align-items:center;
+  padding:8px 4px 14px;margin-bottom:14px;
+}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.token{
+  padding:9px 14px;border-radius:4px;
+  font-family:var(--font-j);font-size:.9rem;font-weight:700;
+  cursor:pointer;transition:.15s;letter-spacing:.03em;
+}
+.t-bank{
+  background:rgba(15,0,5,.8);border:1px solid var(--bdr3);color:var(--txt);
+}
+.t-bank:hover{border-color:var(--bdr);box-shadow:0 0 0 1px var(--bdr)}
+.t-bank.used{opacity:.2;pointer-events:none}
+.t-ans{
+  background:var(--cr4);border:1px solid var(--bdr2);color:var(--cr2);
+  box-shadow:var(--glow);
+  animation:tpop .2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes tpop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Check button */
+.check-btn{
+  width:calc(100% - 32px);margin:0 16px 20px;
+  padding:17px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.75rem;font-weight:700;
+  letter-spacing:.15em;transition:.2s;
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr3);
+  color:var(--txt3);pointer-events:none;
+  position:relative;overflow:hidden;
+}
+.check-btn.on{
+  background:linear-gradient(135deg,var(--cr3),rgba(180,0,30,.8));
+  border:1px solid var(--bdr2);color:#fff;pointer-events:all;
+  box-shadow:var(--glow);
+}
+.check-btn.on::before{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+  transition:.4s;
+}
+.check-btn.on:hover::before{left:100%}
+.check-btn.on:hover{transform:translateY(-1px);box-shadow:var(--glow2)}
+.check-btn.on:active{transform:translateY(2px);box-shadow:none}
+
+/* Feedback panel */
+.fb-panel{
+  position:fixed;bottom:0;left:50%;transform:translate(-50%,100%);
+  width:100%;max-width:480px;
+  padding:18px 16px 28px;z-index:200;
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+  border-top:2px solid;border-radius:12px 12px 0 0;
+  backdrop-filter:blur(30px);
+}
+.fb-panel.show{transform:translate(-50%,0)}
+.fb-panel.ok-fb{
+  background:rgba(0,30,10,.95);border-color:rgba(0,200,60,.4);
+}
+.fb-panel.bad-fb{
+  background:rgba(30,0,5,.97);border-color:var(--bdr2);
+}
+.fb-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fb-ico{width:28px;height:28px}
+.fb-title{font-family:var(--font-h);font-size:.88rem;font-weight:700;letter-spacing:.06em}
+.ok-fb .fb-title{color:#00dd55}
+.bad-fb .fb-title{color:var(--cr2)}
+.fb-body{font-size:.82rem;font-weight:500;color:var(--txt2);line-height:1.6;margin-bottom:12px}
+.fb-body .jp-fb{font-family:var(--font-j);font-size:1rem;color:var(--txt);display:block;margin-bottom:3px}
+.fb-next{
+  width:100%;padding:15px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.72rem;font-weight:700;letter-spacing:.12em;
+  color:#fff;transition:.15s;position:relative;overflow:hidden;
+}
+.ok-fb .fb-next{background:linear-gradient(135deg,rgba(0,120,40,.8),rgba(0,180,60,.6));border:1px solid rgba(0,200,60,.3)}
+.bad-fb .fb-next{background:linear-gradient(135deg,var(--cr3),rgba(160,0,25,.8));border:1px solid var(--bdr2)}
+.fb-next:active{transform:translateY(2px)}
+
+/* SHAKE */
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.shake{animation:shake .4s ease}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESULT PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#result{
+  background:var(--void);
+  align-items:center;justify-content:center;
+  padding:40px 24px;text-align:center;
+  position:relative;
+}
+.res-symbol{
+  width:100px;height:100px;margin:0 auto 20px;
+  animation:resIn .6s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes resIn{from{transform:scale(0) rotate(-30deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.res-title{font-family:var(--font-h);font-size:1.6rem;font-weight:900;letter-spacing:.06em;color:var(--txt);margin-bottom:6px}
+.res-sub{font-size:.9rem;font-weight:500;color:var(--txt3);letter-spacing:.04em;margin-bottom:24px}
+.xp-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:10px 24px;border-radius:6px;
+  background:var(--cr4);border:1px solid var(--bdr2);
+  font-family:var(--font-h);font-size:1rem;font-weight:800;
+  letter-spacing:.06em;color:var(--cr2);margin-bottom:28px;
+  box-shadow:var(--glow);
+  animation:xpIn .5s cubic-bezier(.34,1.56,.64,1) .3s both;
+}
+@keyframes xpIn{from{transform:scale(0) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.res-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:28px}
+.res-stat{padding:16px 10px;border-radius:6px;text-align:center;position:relative;overflow:hidden}
+.res-stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cr2),transparent)}
+.rsv{font-family:var(--font-h);font-size:1.5rem;font-weight:900;color:var(--cr2);display:block;text-shadow:0 0 12px rgba(255,0,51,.4)}
+.rsl{font-size:.6rem;font-weight:600;color:var(--txt3);letter-spacing:.1em}
+.res-btn{
+  width:100%;padding:17px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.75rem;font-weight:700;letter-spacing:.12em;
+  color:#fff;transition:.15s;margin-bottom:10px;position:relative;overflow:hidden;
+}
+.res-btn.primary{
+  background:linear-gradient(135deg,var(--cr3),rgba(160,0,25,.8));
+  border:1px solid var(--bdr2);box-shadow:var(--glow);
+}
+.res-btn.secondary{
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr3);color:var(--txt2);
+}
+.res-btn:active{transform:translateY(2px)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   THEORY PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#theory{padding-bottom:90px}
+.theory-banner{
+  padding:24px 16px 30px;
+  background:linear-gradient(180deg,rgba(120,0,20,.3),transparent);
+  border-bottom:1px solid var(--bdr);
+  position:relative;overflow:hidden;
+}
+.theory-banner::before{
+  content:'文法';font-family:var(--font-j);font-size:8rem;font-weight:900;
+  position:absolute;right:-10px;top:-10px;color:rgba(204,0,34,.04);
+  pointer-events:none;line-height:1;
+}
+.theory-banner h1{font-family:var(--font-h);font-size:1rem;font-weight:700;letter-spacing:.12em;color:var(--cr2);margin-bottom:6px}
+.theory-banner p{font-size:.82rem;color:var(--txt3);font-weight:500;letter-spacing:.04em}
+
+.theory-body{padding:16px}
+.t-sec{margin-bottom:28px}
+.t-sec-head{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  padding-bottom:8px;border-bottom:1px solid var(--bdr);
+}
+.t-sec-head h2{font-family:var(--font-h);font-size:.78rem;font-weight:700;letter-spacing:.1em;color:var(--cr2)}
+.t-sec-head .sym{width:20px;height:20px;color:var(--cr2)}
+
+.h-box{
+  padding:14px 16px;border-radius:6px;margin-bottom:12px;
+  background:rgba(255,150,0,.06);border:1px solid rgba(255,150,0,.18);
+  border-left:2px solid rgba(255,150,0,.6);
+  font-size:.82rem;font-weight:500;color:rgba(255,200,140,.85);
+  line-height:1.65;letter-spacing:.02em;
+}
+.h-box strong{color:rgba(255,200,140,1);font-weight:700}
+
+.particle-card{
+  padding:16px;border-radius:6px;margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.particle-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,var(--cr2),transparent);
+}
+.pc-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.pc-char{
+  width:46px;height:46px;border-radius:6px;
+  background:var(--cr4);border:1px solid var(--bdr2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-j);font-size:1.6rem;font-weight:900;color:var(--cr2);
+  flex-shrink:0;box-shadow:var(--glow);
+}
+.pc-info .pc-rom{font-family:var(--font-h);font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--cr2);margin-bottom:2px}
+.pc-info .pc-desc{font-size:.78rem;font-weight:500;color:var(--txt3)}
+.ex-line{
+  padding:10px 12px;border-radius:4px;margin-bottom:7px;
+  background:rgba(255,255,255,.02);border:1px solid var(--bdr3);
+}
+.ex-line .ej{font-family:var(--font-j);font-size:.95rem;color:var(--txt);display:block;margin-bottom:3px}
+.ex-line .er{font-family:var(--font-h);font-size:.62rem;color:var(--cr2);letter-spacing:.06em;display:block;margin-bottom:2px}
+.ex-line .em{font-size:.75rem;color:var(--txt3);font-weight:500}
+
+/* Kana chart */
+.kana-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.kana-c{
+  padding:10px 4px;border-radius:4px;text-align:center;cursor:pointer;
+  background:rgba(255,255,255,.02);border:1px solid var(--bdr3);
+  transition:.15s;position:relative;overflow:hidden;
+}
+.kana-c:hover{border-color:var(--bdr2);background:var(--cr4);box-shadow:var(--glow)}
+.kana-c.act{background:var(--cr4);border-color:var(--bdr2);box-shadow:var(--glow)}
+.kana-c.empty{opacity:.15;pointer-events:none}
+.kc{font-family:var(--font-j);font-size:1.4rem;color:var(--txt);display:block;line-height:1}
+.kr{font-family:var(--font-h);font-size:.58rem;color:var(--cr2);font-weight:700;margin-top:4px;display:block;letter-spacing:.06em}
+
+/* Number grid */
+.num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.num-c{
+  padding:10px 6px;border-radius:4px;text-align:center;cursor:pointer;
+  background:rgba(255,255,255,.02);border:1px solid var(--bdr3);transition:.15s;
+}
+.num-c:hover{border-color:var(--bdr2);background:var(--cr4)}
+.n-num{font-family:var(--font-h);font-size:1.1rem;font-weight:800;color:var(--cr2);display:block}
+.n-kana{font-family:var(--font-j);font-size:1rem;color:var(--txt);display:block;margin:2px 0}
+.n-rom{font-family:var(--font-h);font-size:.55rem;color:var(--txt3);letter-spacing:.06em}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.modal-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:.3s;
+  backdrop-filter:blur(8px);
+}
+.modal-ov.open{opacity:1;pointer-events:all}
+.modal-sh{
+  background:linear-gradient(180deg,rgba(18,0,6,.98),rgba(8,0,3,.99));
+  border-radius:12px 12px 0 0;border-top:1px solid var(--bdr);
+  width:100%;max-width:480px;padding:28px 20px 36px;
+  transform:translateY(100%);transition:.35s cubic-bezier(.4,0,.2,1);
+  text-align:center;position:relative;
+}
+.modal-ov.open .modal-sh{transform:translateY(0)}
+.modal-sym{width:60px;height:60px;margin:0 auto 16px;color:var(--cr2);animation:float 2s ease-in-out infinite}
+.modal-title{font-family:var(--font-h);font-size:1rem;font-weight:800;letter-spacing:.08em;color:var(--txt);margin-bottom:8px}
+.modal-body{font-size:.85rem;font-weight:500;color:var(--txt2);line-height:1.7;margin-bottom:24px;letter-spacing:.02em}
+.modal-btn{
+  width:100%;padding:15px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.72rem;font-weight:700;letter-spacing:.12em;
+  color:#fff;transition:.15s;margin-bottom:8px;
+}
+.modal-btn.pri{
+  background:linear-gradient(135deg,var(--cr3),rgba(160,0,25,.8));
+  border:1px solid var(--bdr2);box-shadow:var(--glow);
+}
+.modal-btn.sec{background:rgba(255,255,255,.04);border:1px solid var(--bdr3);color:var(--txt2)}
+.modal-btn:active{transform:translateY(2px)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PARTICLES (CSS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.particle-fx{
+  position:fixed;top:0;border-radius:50%;z-index:999;
+  pointer-events:none;animation:pfx linear forwards;
+}
+@keyframes pfx{0%{transform:translateY(0) rotate(0) translateX(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg) translateX(var(--dx));opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND SYSTEM -->
+<div class="bg-grid"></div>
+<div class="bg-orbs"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<div class="scanlines"></div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║         SPLASH                 ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="page active" id="splash">
+  <!-- Central logo ring -->
+  <div class="splash-logo-ring">
+    <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer ring -->
+      <circle cx="70" cy="70" r="66" stroke="rgba(204,0,34,.3)" stroke-width="1" stroke-dasharray="4 8"/>
+      <!-- Middle ring -->
+      <circle cx="70" cy="70" r="54" stroke="rgba(204,0,34,.6)" stroke-width="1.5" stroke-dasharray="414" stroke-dashoffset="80">
+        <animateTransform attributeName="transform" type="rotate" from="0 70 70" to="360 70 70" dur="6s" repeatCount="indefinite"/>
+      </circle>
+      <!-- Inner ring -->
+      <circle cx="70" cy="70" r="42" stroke="rgba(204,0,34,.25)" stroke-width="1" stroke-dasharray="264" stroke-dashoffset="40">
+        <animateTransform attributeName="transform" type="rotate" from="360 70 70" to="0 70 70" dur="4s" repeatCount="indefinite"/>
+      </circle>
+      <!-- Tick marks -->
+      <g stroke="rgba(204,0,34,.7)" stroke-width="1.5">
+        <line x1="70" y1="4" x2="70" y2="14"/><line x1="70" y1="126" x2="70" y2="136"/>
+        <line x1="4" y1="70" x2="14" y2="70"/><line x1="126" y1="70" x2="136" y2="70"/>
+      </g>
+      <!-- Center kanji -->
+      <text x="70" y="82" font-family="Noto Sans JP,sans-serif" font-size="36" font-weight="900" fill="rgba(220,0,40,.9)" text-anchor="middle">日</text>
+      <!-- Glow -->
+      <circle cx="70" cy="70" r="30" fill="rgba(204,0,34,.05)">
+        <animate attributeName="r" values="28;34;28" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values=".05;.12;.05" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  </div>
+
+  <div class="splash-tagline">// NIHONGO PROTOCOL :: N5 SYSTEM //</div>
+
+  <div class="splash-title">
+    <span class="line1 glitch" data-text="JAPANESE">JAPANESE</span>
+    <span class="line2">日本語</span>
+  </div>
+
+  <div class="splash-div"></div>
+
+  <p class="splash-sub">
+    N5 Full Course — <span>Hinglish mein</span> explained.<br>
+    Glassmorphic interface. Premium learning protocol.
+  </p>
+
+  <div class="feat-row">
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <span class="feat-txt">GAMIFIED LESSONS</span>
+    </div>
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <span class="feat-txt">HINGLISH EXPLAINED</span>
+    </div>
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </div>
+      <span class="feat-txt">LIVES SYSTEM</span>
+    </div>
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <span class="feat-txt">XP + STREAKS</span>
+    </div>
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      </div>
+      <span class="feat-txt">N5 ROADMAP</span>
+    </div>
+    <div class="feat">
+      <div class="feat-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <span class="feat-txt">FULL N5 READY</span>
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="goHome()">
+    INITIALIZE PROTOCOL &#x2192;
+  </button>
+</div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║           HOME                 ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="page" id="home">
+
+  <div class="home-header">
+    <div class="header-top">
+      <div class="logo-mark">
+        NIHONGO <span class="slash">//</span> N5
+        <span class="ver">v2.0</span>
+      </div>
+      <div class="status-bar">
+        <div class="status-chip">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span class="val" id="h-streak">5</span>
+        </div>
+        <div class="status-chip">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span class="val" id="h-xp">120</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="user-panel glass bracket bracket-inner">
+      <div class="avatar-ring">
+        <svg viewBox="0 0 52 52" fill="none">
+          <circle cx="26" cy="26" r="24" stroke="rgba(204,0,34,.4)" stroke-width="1" stroke-dasharray="150" stroke-dashoffset="0"/>
+          <circle cx="26" cy="26" r="20" stroke="rgba(204,0,34,.2)" stroke-width="1" stroke-dasharray="4 6"/>
+        </svg>
+        <div class="avatar-core" id="avatarCore">日</div>
+      </div>
+      <div class="user-data">
+        <div class="user-title">LEARNER PROTOCOL ACTIVE</div>
+        <div class="user-sub">N5 BEGINNER // LEVEL <span id="h-lv">01</span></div>
+        <div class="xp-bar"><div class="xp-fill" id="h-xpbar" style="width:40%"></div></div>
+        <div class="xp-label"><span id="h-xp2">120</span> / 300 XP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-cell glass">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(204,0,34,.6)" stroke-width="2" style="margin-bottom:6px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span class="stat-v" id="s-streak">5</span>
+      <span class="stat-l">STREAK</span>
+    </div>
+    <div class="stat-cell glass">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(204,0,34,.6)" stroke-width="2" style="margin-bottom:6px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="stat-v" id="s-xp">120</span>
+      <span class="stat-l">TOTAL XP</span>
+    </div>
+    <div class="stat-cell glass">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(204,0,34,.6)" stroke-width="2" style="margin-bottom:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span class="stat-v" id="s-done">3</span>
+      <span class="stat-l">COMPLETE</span>
+    </div>
+  </div>
+
+  <!-- Roadmap -->
+  <div class="sec-label">
+    <span>N5 ROADMAP</span>
+    <div class="line"></div>
+    <span class="mono">7 UNITS</span>
+  </div>
+
+  <div class="roadmap-h">
+    <!-- Card 1 -->
+    <div class="road-card glass-red bracket bracket-inner" onclick="startLesson('hiragana_vowels')">
+      <div class="rc-num">UNIT 01</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.5">
+        <path d="M19 4c0 0-8 6-8 15a8 8 0 0016 0C27 10 19 4 19 4z"/><line x1="19" y1="12" x2="19" y2="22"/><line x1="14" y1="17" x2="24" y2="17"/>
+      </svg>
+      <div class="rc-status"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="rc-title">HIRAGANA</div>
+      <div class="rc-desc">46 characters — pehla script</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:80%"></div></div>
+    </div>
+    <!-- Card 2 -->
+    <div class="road-card glass bracket bracket-inner" onclick="startLesson('greetings')" style="border-color:rgba(180,60,200,.4)">
+      <div class="rc-num">UNIT 02</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(200,140,255,.85)" stroke-width="1.5">
+        <circle cx="19" cy="14" r="6"/><path d="M6 32c0-7.18 5.82-13 13-13s13 5.82 13 13"/>
+      </svg>
+      <div class="rc-status"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(200,140,255,.5)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+      <div class="rc-title">GREETINGS</div>
+      <div class="rc-desc">Ohayou, Konnichiwa...</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:50%;background:rgba(200,140,255,.7)"></div></div>
+    </div>
+    <!-- Card 3 -->
+    <div class="road-card glass bracket bracket-inner" onclick="startLesson('numbers')" style="border-color:rgba(0,160,255,.35)">
+      <div class="rc-num">UNIT 03</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(80,180,255,.85)" stroke-width="1.5">
+        <rect x="4" y="4" width="12" height="12" rx="2"/><rect x="22" y="4" width="12" height="12" rx="2"/><rect x="4" y="22" width="12" height="12" rx="2"/><rect x="22" y="22" width="12" height="12" rx="2"/>
+      </svg>
+      <div class="rc-title">NUMBERS</div>
+      <div class="rc-desc">1 se 1000 tak</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:60%;background:rgba(80,180,255,.7)"></div></div>
+    </div>
+    <!-- Card 4 locked -->
+    <div class="road-card glass locked">
+      <div class="rc-num">UNIT 04</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5">
+        <path d="M6 16L19 4l13 12M9 13v17h20V13"/><line x1="15" y1="22" x2="23" y2="22"/><line x1="19" y1="18" x2="19" y2="26"/>
+      </svg>
+      <div class="rc-title">VOCABULARY</div>
+      <div class="rc-desc">800 N5 words</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:0%"></div></div>
+    </div>
+    <!-- Card 5 locked -->
+    <div class="road-card glass locked">
+      <div class="rc-num">UNIT 05</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5">
+        <rect x="3" y="3" width="32" height="32" rx="3"/><line x1="3" y1="13" x2="35" y2="13"/><line x1="13" y1="13" x2="13" y2="35"/>
+      </svg>
+      <div class="rc-title">GRAMMAR</div>
+      <div class="rc-desc">Particles: wa ga wo ni</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:0%"></div></div>
+    </div>
+    <!-- Card 6 locked -->
+    <div class="road-card glass locked">
+      <div class="rc-num">UNIT 06</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5">
+        <rect x="5" y="5" width="28" height="28" rx="2"/><line x1="5" y1="14" x2="33" y2="14"/><line x1="5" y1="24" x2="33" y2="24"/>
+      </svg>
+      <div class="rc-title">KANJI N5</div>
+      <div class="rc-desc">80 kanji characters</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:0%"></div></div>
+    </div>
+    <!-- Card 7 locked -->
+    <div class="road-card glass locked">
+      <div class="rc-num">UNIT 07</div>
+      <svg class="rc-symbol" viewBox="0 0 38 38" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5">
+        <circle cx="19" cy="19" r="15"/><path d="M19 10v9l5 3"/><line x1="7" y1="7" x2="31" y2="7" stroke-dasharray="2 3"/>
+      </svg>
+      <div class="rc-title">MOCK TEST</div>
+      <div class="rc-desc">Real N5 exam format</div>
+      <div class="rc-bar"><div class="rc-bar-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Lessons -->
+  <div class="sec-label" style="margin-top:16px">
+    <span>ACTIVE MISSIONS</span>
+    <div class="line"></div>
+  </div>
+
+  <div class="lesson-list">
+
+    <div class="lesson-row glass" onclick="startLesson('greetings')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">GREETINGS</div>
+        <div class="l-meta">Ohayou · Konnichiwa · Arigatou</div>
+      </div>
+      <span class="l-badge badge-done">DONE</span>
+    </div>
+
+    <div class="lesson-row glass" onclick="startLesson('hiragana_vowels')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-3.92-7.47-6.25-14.6-6.5"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">HIRAGANA VOWELS</div>
+        <div class="l-meta">あいうえお — 5 core sounds</div>
+      </div>
+      <span class="l-badge badge-active">ACTIVE</span>
+    </div>
+
+    <div class="lesson-row glass" onclick="startLesson('numbers')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">NUMBERS 1–10</div>
+        <div class="l-meta">Ichi Ni San — ginna seekho</div>
+      </div>
+      <div class="l-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+    <div class="lesson-row glass" onclick="startLesson('vocab_basics')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">VOCABULARY BASICS</div>
+        <div class="l-meta">Neko · Kawaii · Oishii</div>
+      </div>
+      <div class="l-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+    <div class="lesson-row glass" onclick="startLesson('grammar_wa')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">GRAMMAR: は PARTICLE</div>
+        <div class="l-meta">Topic marker — Watashi wa...</div>
+      </div>
+      <div class="l-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+    <div class="lesson-row glass" onclick="goPage('theory')">
+      <div class="l-sym">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="l-info">
+        <div class="l-name">THEORY DATABASE</div>
+        <div class="l-meta">Full Hinglish explanations</div>
+      </div>
+      <div class="l-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bnav">
+    <button class="bn on" onclick="goPage('home')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      HOME
+    </button>
+    <button class="bn" onclick="goPage('theory')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      THEORY
+    </button>
+    <button class="bn" onclick="openModal('streak')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      STREAK
+    </button>
+    <button class="bn" onclick="openModal('profile')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+      PROFILE
+    </button>
+  </div>
+</div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║         LESSON                 ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="page" id="lesson">
+  <div class="lesson-topbar">
+    <button class="back-x" onclick="confirmBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="prog-track"><div class="prog-fill" id="lp-fill" style="width:0%"></div></div>
+    <div class="hp-row" id="lp-hp"></div>
+  </div>
+  <div class="q-zone" id="q-zone"></div>
+  <button class="check-btn" id="check-btn" onclick="checkAns()">
+    &#x25B6; VERIFY ANSWER
+  </button>
+  <div class="fb-panel" id="fb-panel">
+    <div class="fb-top">
+      <div class="fb-ico" id="fb-ico"></div>
+      <span class="fb-title" id="fb-title"></span>
+    </div>
+    <div class="fb-body" id="fb-body"></div>
+    <button class="fb-next" id="fb-next" onclick="nextQ()">CONTINUE &#x2192;</button>
+  </div>
+</div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║          RESULT                ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="page" id="result">
+  <div class="res-symbol" id="res-sym">
+    <svg viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="46" stroke="rgba(204,0,34,.3)" stroke-width="1" stroke-dasharray="6 10"/>
+      <circle cx="50" cy="50" r="36" stroke="var(--cr2)" stroke-width="1.5"/>
+      <path d="M30 50l15 15 25-30" stroke="var(--cr2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="res-title" id="res-title">MISSION COMPLETE</div>
+  <div class="res-sub" id="res-sub">Protocol executed successfully</div>
+  <div class="xp-badge">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <span id="res-xp-text">+20 XP ACQUIRED</span>
+  </div>
+  <div class="res-stats">
+    <div class="res-stat glass"><span class="rsv" id="rv-xp">+20</span><span class="rsl">XP EARNED</span></div>
+    <div class="res-stat glass"><span class="rsv" id="rv-acc">80%</span><span class="rsl">ACCURACY</span></div>
+    <div class="res-stat glass"><span class="rsv" id="rv-st">5</span><span class="rsl">STREAK</span></div>
+  </div>
+  <button class="res-btn primary" onclick="goPage('home');updateHomeUI()">
+    &#x2190; RETURN TO BASE
+  </button>
+  <button class="res-btn secondary" onclick="replayLesson()">
+    &#x21BB; REPLAY MISSION
+  </button>
+</div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║          THEORY                ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="page" id="theory">
+  <div class="theory-banner">
+    <h1>// THEORY DATABASE</h1>
+    <p>Complete N5 knowledge — Hinglish mein decoded</p>
+  </div>
+
+  <div class="theory-body">
+
+    <!-- Hiragana -->
+    <div class="t-sec">
+      <div class="t-sec-head">
+        <svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72"/></svg>
+        <h2>HIRAGANA CHART</h2>
+      </div>
+      <div class="h-box">
+        <strong>Hinglish:</strong> Hiragana = Japanese ka "ABCD". 46 characters, har ek ek sound. Hindi mein क = ka sound, waise hi か = ka. <strong>Tap karke pronunciation suno!</strong>
+      </div>
+      <div class="kana-grid" id="kana-grid"></div>
+    </div>
+
+    <!-- Particles -->
+    <div class="t-sec">
+      <div class="t-sec-head">
+        <svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        <h2>PARTICLES — GRAMMAR CORE</h2>
+      </div>
+      <div class="h-box">
+        <strong>Hinglish:</strong> Particles = words ke baad aane wale tiny words jo role batate hain. Hindi mein "ko, se, mein, ne" jaisa. N5 ka dil hain yeh!
+      </div>
+
+      <div class="particle-card glass">
+        <div class="pc-top">
+          <div class="pc-char">は</div>
+          <div class="pc-info">
+            <div class="pc-rom">WA — TOPIC MARKER</div>
+            <div class="pc-desc">Sentence ka topic highlight karta hai</div>
+          </div>
+        </div>
+        <div class="h-box" style="margin-bottom:10px">Hindi mein "Main [topic] hoon" — "wa" wahi kaam karta hai. "Watashi WA" = "MERA topic ye hai"!</div>
+        <div class="ex-line"><span class="ej">わたし は がくせい です。</span><span class="er">Watashi wa gakusei desu.</span><span class="em">Main student hoon.</span></div>
+        <div class="ex-line"><span class="ej">これ は ほん です。</span><span class="er">Kore wa hon desu.</span><span class="em">Yeh ek kitaab hai.</span></div>
+      </div>
+
+      <div class="particle-card glass">
+        <div class="pc-top">
+          <div class="pc-char">を</div>
+          <div class="pc-info">
+            <div class="pc-rom">WO — OBJECT MARKER</div>
+            <div class="pc-desc">Jo cheez action receive kare</div>
+          </div>
+        </div>
+        <div class="ex-line"><span class="ej">りんご を たべます。</span><span class="er">Ringo wo tabemasu.</span><span class="em">Seb khata hoon. (wo = "ko")</span></div>
+        <div class="ex-line"><span class="ej">みず を のみます。</span><span class="er">Mizu wo nomimasu.</span><span class="em">Paani peeta hoon.</span></div>
+      </div>
+
+      <div class="particle-card glass">
+        <div class="pc-top">
+          <div class="pc-char">に</div>
+          <div class="pc-info">
+            <div class="pc-rom">NI — DIRECTION + TIME</div>
+            <div class="pc-desc">Kahan ja rahe + kab</div>
+          </div>
+        </div>
+        <div class="ex-line"><span class="ej">がっこう に いきます。</span><span class="er">Gakkou ni ikimasu.</span><span class="em">School jaata hoon.</span></div>
+        <div class="ex-line"><span class="ej">しちじ に おきます。</span><span class="er">Shichiji ni okimasu.</span><span class="em">7 baje uthta hoon.</span></div>
+      </div>
+
+      <div class="particle-card glass">
+        <div class="pc-top">
+          <div class="pc-char">で</div>
+          <div class="pc-info">
+            <div class="pc-rom">DE — LOCATION OF ACTION</div>
+            <div class="pc-desc">Kahan kaam ho raha hai</div>
+          </div>
+        </div>
+        <div class="ex-line"><span class="ej">がっこう で べんきょうします。</span><span class="er">Gakkou de benkyou shimasu.</span><span class="em">School MEIN padhta hoon.</span></div>
+      </div>
+    </div>
+
+    <!-- Numbers -->
+    <div class="t-sec">
+      <div class="t-sec-head">
+        <svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+        <h2>NUMBERS — 1 TO 10</h2>
+      </div>
+      <div class="h-box">
+        <strong>Hinglish:</strong> Numbers bahut logical hain! 11 = 10+1 = じゅういち. 23 = にじゅうさん. Tap karke pronunciation suno!
+      </div>
+      <div class="num-grid" id="num-grid"></div>
+    </div>
+
+    <!-- Verbs -->
+    <div class="t-sec">
+      <div class="t-sec-head">
+        <svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 3 12 12 3 21 12 19 12"/><polyline points="5 12 5 20 19 20 19 12"/></svg>
+        <h2>VERBS — BASIC FORMS</h2>
+      </div>
+      <div class="h-box">
+        <strong>Hinglish:</strong> Japanese verbs sentence ke AAKHIR mein aate hain — Hindi jaisa! "Main khata hoon" = "Watashi wa TABEMASU". ます (masu) = polite present.
+      </div>
+      <div class="particle-card glass">
+        <div class="pc-top">
+          <div class="pc-char" style="font-size:1rem">ます</div>
+          <div class="pc-info">
+            <div class="pc-rom">MASU — POLITE PRESENT</div>
+            <div class="pc-desc">Formal sentences ke liye</div>
+          </div>
+        </div>
+        <div class="ex-line"><span class="ej">たべます / たべません</span><span class="er">tabemasu / tabemasen</span><span class="em">Khata hoon / Nahi khata</span></div>
+        <div class="ex-line"><span class="ej">いきます / いきません</span><span class="er">ikimasu / ikimasen</span><span class="em">Jaata hoon / Nahi jaata</span></div>
+        <div class="ex-line"><span class="ej">いきたい です</span><span class="er">ikitai desu</span><span class="em">Jaana chahta hoon</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bnav">
+    <button class="bn" onclick="goPage('home')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      HOME
+    </button>
+    <button class="bn on" onclick="goPage('theory')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      THEORY
+    </button>
+    <button class="bn" onclick="openModal('streak')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      STREAK
+    </button>
+    <button class="bn" onclick="openModal('profile')">
+      <svg class="bn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+      PROFILE
+    </button>
+  </div>
+</div>
+
+<!-- ╔════════════════════════════════╗ -->
+<!-- ║           MODAL                ║ -->
+<!-- ╚════════════════════════════════╝ -->
+<div class="modal-ov" id="modal-ov" onclick="closeModalOv(event)">
+  <div class="modal-sh glass">
+    <div class="modal-sym" id="m-sym"></div>
+    <div class="modal-title" id="m-title"></div>
+    <div class="modal-body" id="m-body"></div>
+    <button class="modal-btn pri" id="m-btn1" onclick="closeModal()">CONFIRM</button>
+    <button class="modal-btn sec" id="m-btn2" onclick="closeModal()">CANCEL</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+const S={xp:120,streak:5,level:1,heartsMax:3,done:3,
+  qIdx:0,correct:0,total:0,heartsLeft:3,lessonXP:0,
+  sel:null,tokens:[],answered:false,currentKey:null};
+
+/* ═══════════════════════════════════════
+   LESSON DATA
+═══════════════════════════════════════ */
+const LESSONS={
+greetings:[
+  {type:'fc',front:'おはよう',rom:'Ohayou',back:'Good Morning',hin:'Subah uthke pehla greeting! Casual version. Formal: おはようございます (Ohayou gozaimasu). Family aur dosto ke liye casual theek hai.'},
+  {type:'mcq',badge:'TRANSLATE',disp:'こんにちは',rom:'Konnichiwa',instr:'Yeh kya matlab hai?',opts:['Good morning','Good evening','Hello / Good afternoon','Thank you'],ans:2,ok:'Sahi! Din mein milne pe: Konnichiwa!',bad:'こんにちは = Hello / Good afternoon'},
+  {type:'mcq',badge:'SELECT JAPANESE',instr:'"Thank you very much" kaise bologe?',opts:['すみません','さようなら','ありがとうございます','こんばんは'],roms:['Sumimasen','Sayounara','Arigatou gozaimasu','Konbanwa'],ans:2,ok:'Bilkul sahi! Arigatou gozaimasu!',bad:'ありがとうございます = Thank you very much'},
+  {type:'arr',instr:'Sentence assemble karo:',eng:'Excuse me / Sorry',words:['です','すみません'],correct:'すみません',rom:'Sumimasen',meaning:'Excuse me ya Sorry — dono kaam karta hai!'},
+  {type:'mcq',badge:'MEANING',disp:'さようなら',rom:'Sayounara',instr:'Yeh kab use karte hain?',opts:['Subah ko','Khana ke baad','Alvida bolne pe','Maafi ke liye'],ans:2,ok:'Sahi! Sayounara = Goodbye!',bad:'さようなら = Goodbye'},
+  {type:'mcq',badge:'SELECT',instr:'"Good night" kaise bologe?',opts:['おはよう','こんばんは','おやすみなさい','いただきます'],roms:['Ohayou','Konbanwa','Oyasuminasai','Itadakimasu'],ans:2,ok:'Perfect! Sone se pehle: Oyasuminasai!',bad:'おやすみなさい = Good night'},
+],
+hiragana_vowels:[
+  {type:'fc',front:'あ',rom:'a',back:'Sound: "A"',hin:'"あ" = "a" sound — jaise "aadmi" ka pehla letter! Hiragana ka pehla character. Practice: あ あ あ — tap karo pronunciation sunne ke liye!'},
+  {type:'mcq',badge:'READ',disp:'い',rom:'i',instr:'Yeh character kaisa padhta hai?',opts:['a','i','u','e'],ans:1,ok:'い = "i" — jaise "ik" mein!',bad:'い = i sound'},
+  {type:'mcq',badge:'READ',disp:'う',rom:'u',instr:'Pronunciation kya hai?',opts:['a','e','u','o'],ans:2,ok:'う = "u" — jaise "upar" mein!',bad:'う = u sound'},
+  {type:'mcq',badge:'READ',disp:'え',rom:'e',instr:'Yeh kaisa padha jaata hai?',opts:['i','a','o','e'],ans:3,ok:'え = "e" — jaise "ek" mein!',bad:'え = e sound'},
+  {type:'mcq',badge:'READ',disp:'お',rom:'o',instr:'Pronunciation?',opts:['u','o','a','i'],ans:1,ok:'お = "o" — jaise "oh!" mein!',bad:'お = o sound'},
+  {type:'arr',instr:'Vowels ka sahi order banao:',eng:'a, i, u, e, o',words:['う','い','お','あ','え'],correct:'あいうえお',rom:'a-i-u-e-o',meaning:'Japanese ka pehla row! Yaad karo — aise hi seekhte hain!'},
+],
+numbers:[
+  {type:'fc',front:'いち',rom:'ichi',back:'1',hin:'"ichi" = 1. Yaad karne ki trick: "ik" = 1 haath! Latin mein "uni" bhi 1 hai. いち — ek haath ki ek ungli!'},
+  {type:'mcq',badge:'NUMBER',disp:'さん',rom:'san',instr:'Yeh kaunsa number hai?',opts:['1','2','3','4'],ans:2,ok:'さん = 3! "San Francisco" mein 3 letters hain SAN!',bad:'さん = 3 (san)'},
+  {type:'mcq',badge:'NUMBER',disp:'ご',rom:'go',instr:'Kaunsa number?',opts:['4','5','6','7'],ans:1,ok:'ご = 5! "Go" = 5 fingers forward!',bad:'ご = 5 (go)'},
+  {type:'mcq',badge:'TRANSLATE',instr:'"8" ko Japanese mein?',opts:['しち','ろく','はち','きゅう'],roms:['shichi(7)','roku(6)','hachi(8)','kyuu(9)'],ans:2,ok:'はち = 8! Spider ke 8 legs = hachi!',bad:'はち = 8 (hachi)'},
+  {type:'mcq',badge:'NUMBER',disp:'じゅう',rom:'juu',instr:'Kaunsa number hai yeh?',opts:['7','8','9','10'],ans:3,ok:'じゅう = 10! Hoth ki shape jaisi — juu!',bad:'じゅう = 10 (juu)'},
+  {type:'arr',instr:'1 se 5 sequence banao:',eng:'1, 2, 3, 4, 5',words:['に','よん','いち','ご','さん'],correct:'いちにさんよんご',rom:'ichi-ni-san-yon-go',meaning:'Counting sequence! Yaad raho: ichi-ni-san-yon-go!'},
+],
+vocab_basics:[
+  {type:'fc',front:'ねこ',rom:'neko',back:'Cat',hin:'"Neko" = Cat. Yaad karo: "Maneki Neko" — woh lucky cat with raised paw shops mein hota hai! ねこ = neko = cat!'},
+  {type:'mcq',badge:'MEANING',disp:'いぬ',rom:'inu',instr:'Yeh kya hai?',opts:['Cat','Dog','Bird','Fish'],ans:1,ok:'いぬ = Dog! Inuyasha = "inu" (dog) + "yasha" (demon)!',bad:'いぬ = Dog (inu)'},
+  {type:'mcq',badge:'MEANING',disp:'かわいい',rom:'kawaii',instr:'Yeh famous word ka matlab?',opts:['Scary','Hot','Cute','Fast'],ans:2,ok:'かわいい = Cute! Internet pe viral word!',bad:'かわいい = Cute (kawaii)'},
+  {type:'mcq',badge:'TRANSLATE',instr:'"Delicious" ko Japanese mein?',opts:['あたらしい','おいしい','たかい','やすい'],roms:['atarashii','oishii','takai','yasui'],ans:1,ok:'おいしい = Delicious! Khana khaate waqt bolna!',bad:'おいしい = Delicious (oishii)'},
+  {type:'mcq',badge:'MEANING',disp:'おおきい',rom:'ookii',instr:'Size ke baare mein kya matlab?',opts:['Small','Cheap','New','Big'],ans:3,ok:'おおきい = Big! Double "o" = double bada!',bad:'おおきい = Big (ookii)'},
+  {type:'arr',instr:'Sentence construct karo:',eng:'This is a cat.',words:['です','ねこ','これは'],correct:'これはねこです',rom:'Kore wa neko desu.',meaning:'Yeh ek billi hai! (kore=this, wa=topic, neko=cat, desu=is)'},
+],
+grammar_wa:[
+  {type:'fc',front:'は (wa)',rom:'Topic Marker',back:'Sentence ka topic',hin:'"wa" = Hindi mein "to/ne" ki tarah. "Watashi WA" matlab "MAIN" topic hoon is sentence ka. Har sentence mein topic ke baad aata hai. Most important particle!'},
+  {type:'mcq',badge:'CONSTRUCT',instr:'"Main student hoon" Japanese mein?',opts:['あなたはがくせいです','わたしはがくせいです','これはがくせいです','どこはがくせいです'],roms:['Anata wa gakusei desu','Watashi wa gakusei desu','Kore wa gakusei desu','Doko wa gakusei desu'],ans:1,ok:'Bilkul sahi! Watashi=I, wa=topic, gakusei=student, desu=am!',bad:'わたしはがくせいです = I am a student'},
+  {type:'mcq',badge:'GRAMMAR',instr:'"Kore wa hon desu" mein "wa" kya kaam karta hai?',opts:['Object marker','Verb ending','Topic marker','Question word'],ans:2,ok:'Haan! wa = topic marker — "kore" (this) is sentence ka topic hai!',bad:'wa = Topic marker (topic dikhata hai)'},
+  {type:'arr',instr:'Sentence banao:',eng:'I am a teacher.',words:['です','せんせい','わたしは'],correct:'わたしはせんせいです',rom:'Watashi wa sensei desu.',meaning:'Main teacher hoon! (sensei = teacher)'},
+  {type:'mcq',badge:'NEGATIVE',instr:'"Main student NAHI hoon" kaise bologe?',opts:['わたしはがくせいです','わたしはがくせいではありません','わたしがくせいです','がくせいはわたしです'],roms:['...desu (positive)','...dewa arimasen','(no wa)','reversed order'],ans:1,ok:'Sahi! "dewa arimasen" = is not. masu→masen ki tarah!',bad:'わたしはがくせいではありません = I am not a student'},
+],
+};
+
+/* ═══════════════════════════════════════
+   BUILD CHARTS
+═══════════════════════════════════════ */
+const HDATA=[
+  {k:'あ',r:'a'},{k:'い',r:'i'},{k:'う',r:'u'},{k:'え',r:'e'},{k:'お',r:'o'},
+  {k:'か',r:'ka'},{k:'き',r:'ki'},{k:'く',r:'ku'},{k:'け',r:'ke'},{k:'こ',r:'ko'},
+  {k:'さ',r:'sa'},{k:'し',r:'shi'},{k:'す',r:'su'},{k:'せ',r:'se'},{k:'そ',r:'so'},
+  {k:'た',r:'ta'},{k:'ち',r:'chi'},{k:'つ',r:'tsu'},{k:'て',r:'te'},{k:'と',r:'to'},
+  {k:'な',r:'na'},{k:'に',r:'ni'},{k:'ぬ',r:'nu'},{k:'ね',r:'ne'},{k:'の',r:'no'},
+  {k:'は',r:'ha'},{k:'ひ',r:'hi'},{k:'ふ',r:'fu'},{k:'へ',r:'he'},{k:'ほ',r:'ho'},
+  {k:'ま',r:'ma'},{k:'み',r:'mi'},{k:'む',r:'mu'},{k:'め',r:'me'},{k:'も',r:'mo'},
+  {k:'や',r:'ya'},{k:'',r:''},{k:'ゆ',r:'yu'},{k:'',r:''},{k:'よ',r:'yo'},
+  {k:'ら',r:'ra'},{k:'り',r:'ri'},{k:'る',r:'ru'},{k:'れ',r:'re'},{k:'ろ',r:'ro'},
+  {k:'わ',r:'wa'},{k:'',r:''},{k:'を',r:'wo'},{k:'',r:''},{k:'ん',r:'n'},
+];
+(function buildKana(){
+  const g=document.getElementById('kana-grid');
+  if(!g)return;
+  HDATA.forEach(h=>{
+    const d=document.createElement('div');
+    if(!h.k){d.className='kana-c empty';d.innerHTML='<span class="kc">—</span>';g.appendChild(d);return;}
+    d.className='kana-c';
+    d.innerHTML=`<span class="kc">${h.k}</span><span class="kr">${h.r}</span>`;
+    d.onclick=()=>{document.querySelectorAll('.kana-c.act').forEach(x=>x.classList.remove('act'));d.classList.add('act');speak(h.k);};
+    g.appendChild(d);
+  });
+})();
+
+const NUMS=[{n:1,k:'いち',r:'ichi'},{n:2,k:'に',r:'ni'},{n:3,k:'さん',r:'san'},{n:4,k:'よん',r:'yon'},{n:5,k:'ご',r:'go'},{n:6,k:'ろく',r:'roku'},{n:7,k:'なな',r:'nana'},{n:8,k:'はち',r:'hachi'},{n:9,k:'きゅう',r:'kyuu'},{n:10,k:'じゅう',r:'juu'}];
+(function buildNums(){
+  const g=document.getElementById('num-grid');if(!g)return;
+  NUMS.forEach(n=>{
+    const d=document.createElement('div');d.className='num-c';
+    d.innerHTML=`<span class="n-num">${n.n}</span><span class="n-kana">${n.k}</span><span class="n-rom">${n.r}</span>`;
+    d.onclick=()=>{speak(n.k);d.style.borderColor='var(--cr2)';setTimeout(()=>d.style.borderColor='',400);};
+    g.appendChild(d);
+  });
+})();
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goHome(){goPage('home');updateHomeUI();}
+
+function updateHomeUI(){
+  const lv=Math.floor(S.xp/300)+1;S.level=lv;
+  const xpInLv=S.xp%300;
+  document.getElementById('h-streak').textContent=S.streak;
+  document.getElementById('h-xp').textContent=S.xp;
+  document.getElementById('h-lv').textContent=String(lv).padStart(2,'0');
+  document.getElementById('h-xpbar').style.width=(xpInLv/300*100)+'%';
+  document.getElementById('h-xp2').textContent=xpInLv;
+  document.getElementById('s-streak').textContent=S.streak;
+  document.getElementById('s-xp').textContent=S.xp;
+  document.getElementById('s-done').textContent=S.done;
+  // Avatar kanji based on level
+  const avatarK=['日','語','文','力','達','神'];
+  document.getElementById('avatarCore').textContent=avatarK[Math.min(lv-1,5)];
+}
+
+/* ═══════════════════════════════════════
+   LESSON ENGINE
+═══════════════════════════════════════ */
+function startLesson(key){
+  if(!LESSONS[key]){openModal('locked');return;}
+  S.currentKey=key;S.qIdx=0;S.correct=0;S.total=0;
+  S.heartsLeft=3;S.lessonXP=0;S.sel=null;S.tokens=[];S.answered=false;
+  renderHp();goPage('lesson');renderQ();
+}
+function replayLesson(){if(S.currentKey)startLesson(S.currentKey);}
+
+function renderHp(){
+  const c=document.getElementById('lp-hp');c.innerHTML='';
+  for(let i=0;i<3;i++){
+    const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','hp');s.setAttribute('fill','none');s.setAttribute('stroke',i<S.heartsLeft?'var(--cr2)':'rgba(255,255,255,.12)');s.setAttribute('stroke-width','2');
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d','M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z');
+    if(i<S.heartsLeft)p.setAttribute('fill','rgba(204,0,34,.3)');
+    s.appendChild(p);c.appendChild(s);
+  }
+}
+
+function renderQ(){
+  const qs=LESSONS[S.currentKey];
+  if(S.qIdx>=qs.length){showResult();return;}
+  const q=qs[S.qIdx];
+  document.getElementById('lp-fill').style.width=(S.qIdx/qs.length*100)+'%';
+  S.sel=null;S.tokens=[];S.answered=false;
+  const cb=document.getElementById('check-btn');
+  cb.classList.remove('on');cb.style.display='';
+  document.getElementById('fb-panel').classList.remove('show','ok-fb','bad-fb');
+  const zone=document.getElementById('q-zone');zone.innerHTML='';
+  if(q.type==='fc')renderFC(zone,q);
+  else if(q.type==='mcq')renderMCQ(zone,q);
+  else if(q.type==='arr')renderArr(zone,q);
+}
+
+function mkTag(txt){
+  const d=document.createElement('div');d.className='q-type-tag';
+  d.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>${txt}`;
+  return d;
+}
+
+function renderFC(zone,q){
+  zone.appendChild(mkTag('FLASHCARD // TAP TO REVEAL'));
+  const wrap=document.createElement('div');wrap.className='fc-wrap';
+  wrap.innerHTML=`<div class="flashcard glass" id="fc"><div class="fc-f bracket bracket-inner"><span class="fk kana-display" id="fc-kana">${q.front}</span><span class="fr">${q.rom}</span></div><div class="fc-b bracket bracket-inner"><span class="fa">${q.back}</span><span class="fh">${q.hin}</span></div></div>`;
+  zone.appendChild(wrap);
+  const tip=document.createElement('div');tip.className='tap-indicator';
+  tip.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> TAP TO FLIP`;
+  zone.appendChild(tip);
+  let flipped=false;
+  wrap.onclick=()=>{
+    flipped=!flipped;
+    document.getElementById('fc').classList.toggle('flipped',flipped);
+    speak(q.front);
+    if(flipped){
+      tip.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> RECORDED — CONTINUE`;
+      const cb=document.getElementById('check-btn');
+      cb.classList.add('on');cb.textContent='▶ CARD LEARNED — CONTINUE';S.sel='ok';
+    }
+  };
+}
+
+function renderMCQ(zone,q){
+  zone.appendChild(mkTag(q.badge||'QUESTION'));
+  if(q.disp){
+    const cd=document.createElement('div');
+    cd.className='char-display glass bracket bracket-inner';
+    cd.innerHTML=`<span class="char-kana kana-display">${q.disp}</span><span class="char-rom">${q.rom||''}</span><span class="tap-note">[ TAP TO HEAR ]</span>`;
+    cd.onclick=()=>speak(q.disp);
+    zone.appendChild(cd);
+  }
+  const inst=document.createElement('div');inst.className='q-instr';
+  let ih=q.instr||'';
+  if(q.eng) ih+=`<span class="jp-block">${q.eng}</span>`;
+  if(q.hint_txt) ih+=`<span class="hint-block">${q.hint_txt}</span>`;
+  inst.innerHTML=ih;zone.appendChild(inst);
+  const grid=document.createElement('div');
+  grid.className='opts'+(q.opts.length<=4?' two':'');
+  ['A','B','C','D'].forEach((l,i)=>{
+    if(i>=q.opts.length)return;
+    const btn=document.createElement('button');btn.className='opt';
+    const isJP=/[\u3040-\u30ff\u4e00-\u9faf]/.test(q.opts[i]);
+    const sub=q.roms?`<span class="rom-small">${q.roms[i]}</span>`:'';
+    btn.innerHTML=`<span class="opt-glyph">${l}</span><span class="${isJP?'jp-opt':''}">${q.opts[i]}${sub}</span>`;
+    btn.onclick=()=>{
+      if(S.answered)return;
+      document.querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');S.sel=i;
+      document.getElementById('check-btn').classList.add('on');
+    };
+    grid.appendChild(btn);
+  });
+  zone.appendChild(grid);
+}
+
+function renderArr(zone,q){
+  zone.appendChild(mkTag('WORD ARRANGEMENT'));
+  const inst=document.createElement('div');inst.className='q-instr';
+  inst.innerHTML=`${q.instr}<span class="jp-block">"${q.eng}"</span>`;
+  zone.appendChild(inst);
+  const slots=document.createElement('div');slots.className='ans-track';slots.id='ans-track';zone.appendChild(slots);
+  const bank=document.createElement('div');bank.className='word-bank';
+  [...q.words].sort(()=>Math.random()-.5).forEach(w=>{
+    const t=document.createElement('div');t.className='token t-bank';t.textContent=w;t.dataset.w=w;
+    t.onclick=()=>{
+      if(t.classList.contains('used'))return;t.classList.add('used');
+      S.tokens.push(w);
+      const at=document.createElement('div');at.className='token t-ans';at.textContent=w;
+      at.onclick=()=>{at.remove();t.classList.remove('used');S.tokens=Array.from(document.querySelectorAll('.t-ans')).map(x=>x.textContent);checkArrActive();};
+      slots.appendChild(at);checkArrActive();snd('pop');
+    };
+    bank.appendChild(t);
+  });
+  zone.appendChild(bank);
+}
+function checkArrActive(){document.getElementById('check-btn').classList.toggle('on',document.querySelectorAll('.t-ans').length>0);}
+
+/* ═══════════════════════════════════════
+   CHECK
+═══════════════════════════════════════ */
+function checkAns(){
+  if(S.answered)return;
+  const q=LESSONS[S.currentKey][S.qIdx];S.answered=true;
+  let ok=q.type==='fc'?true:q.type==='arr'?Array.from(document.querySelectorAll('.t-ans')).map(x=>x.textContent).join('')===q.correct:S.sel===q.ans;
+  document.querySelectorAll('.opt,.t-bank,.t-ans').forEach(b=>{b.disabled=true;b.style.pointerEvents='none';});
+  document.getElementById('check-btn').style.display='none';
+  if(ok){S.correct++;S.lessonXP+=10;if(q.type==='mcq')document.querySelectorAll('.opt')[q.ans].classList.add('ok');showFB(true,q);snd('correct');}
+  else{S.heartsLeft=Math.max(0,S.heartsLeft-1);renderHp();if(q.type==='mcq'){if(S.sel!=null)document.querySelectorAll('.opt')[S.sel].classList.add('bad');document.querySelectorAll('.opt')[q.ans].classList.add('ok');}showFB(false,q);snd('wrong');document.getElementById('q-zone').classList.add('shake');setTimeout(()=>document.getElementById('q-zone').classList.remove('shake'),400);}
+  S.total++;
+}
+
+function showFB(ok,q){
+  const p=document.getElementById('fb-panel');
+  p.className='fb-panel show '+(ok?'ok-fb':'bad-fb');
+  const icoEl=document.getElementById('fb-ico');
+  if(ok){
+    icoEl.innerHTML=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00dd55" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>`;
+  }else{
+    icoEl.innerHTML=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+  }
+  document.getElementById('fb-title').textContent=ok?'CORRECT — WELL DONE':'INCORRECT — REVIEW';
+  const body=document.getElementById('fb-body');
+  if(ok){body.innerHTML=`<span style="color:#00dd55;font-weight:700">${q.ok||'Correct!'}</span>`;}
+  else{let ca=q.type==='arr'?`<span class="jp-fb">${q.correct}</span>${q.rom} — ${q.meaning}`:`<span class="jp-fb">${q.opts?q.opts[q.ans]:''}</span>${q.bad||''}`;body.innerHTML=`Correct answer: ${ca}`;}
+}
+function nextQ(){S.qIdx++;renderQ();}
+
+/* ═══════════════════════════════════════
+   RESULT
+═══════════════════════════════════════ */
+function showResult(){
+  const acc=S.total>0?Math.round(S.correct/S.total*100):0;
+  const xpE=S.lessonXP+(acc>=80?20:0);
+  S.xp+=xpE;S.done++;
+  document.getElementById('rv-xp').textContent='+'+xpE;
+  document.getElementById('rv-acc').textContent=acc+'%';
+  document.getElementById('rv-st').textContent=S.streak;
+  document.getElementById('res-xp-text').textContent='+'+xpE+' XP ACQUIRED';
+  if(acc===100){document.getElementById('res-title').textContent='PERFECT SCORE';document.getElementById('res-sub').textContent='100% accuracy — Master level performance';}
+  else if(acc>=70){document.getElementById('res-title').textContent='MISSION COMPLETE';document.getElementById('res-sub').textContent='Protocol executed successfully. Keep going!';}
+  else{document.getElementById('res-title').textContent='MISSION FAILED';document.getElementById('res-sub').textContent='Accuracy below threshold. Replay recommended.';}
+  goPage('result');snd('complete');
+  if(acc>=70)setTimeout(spawnParticles,200);
+  updateHomeUI();
+}
+
+/* ═══════════════════════════════════════
+   CONFIRM BACK
+═══════════════════════════════════════ */
+function confirmBack(){
+  document.getElementById('m-sym').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+  document.getElementById('m-title').textContent='ABORT MISSION?';
+  document.getElementById('m-body').textContent='Current lesson progress will be lost. Confirm abort?';
+  document.getElementById('m-btn1').textContent='CONFIRM ABORT';
+  document.getElementById('m-btn1').onclick=()=>{closeModal();goPage('home');};
+  document.getElementById('m-btn2').textContent='CANCEL — CONTINUE';
+  document.getElementById('m-btn2').onclick=closeModal;
+  document.getElementById('modal-ov').classList.add('open');
+}
+
+/* ═══════════════════════════════════════
+   MODALS
+═══════════════════════════════════════ */
+function openModal(type){
+  const icons={
+    streak:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+    profile:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>`,
+    locked:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--cr2)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`,
+  };
+  const titles={streak:'STREAK DATA',profile:'OPERATOR PROFILE',locked:'ACCESS DENIED'};
+  const bodies={
+    streak:`Current streak: ${S.streak} days active.\n\nRoz ek lesson complete karo — streak badhata raho! Zyada streak = zyada XP multiplier. Kal bhi aana!`,
+    profile:`CALLSIGN: N5 Learner\nLEVEL: ${S.level}\nTOTAL XP: ${S.xp}\nMISSIONS: ${S.done} complete\n\nBahut accha performance! N5 certification tak pohnchoge!`,
+    locked:`This unit is locked.\n\nPehle current active missions complete karo. Ek ek karke seekhoge toh N5 guaranteed pass hoga!`,
+  };
+  document.getElementById('m-sym').innerHTML=icons[type]||icons.locked;
+  document.getElementById('m-title').textContent=titles[type]||'INFO';
+  document.getElementById('m-body').textContent=bodies[type]||'';
+  document.getElementById('m-btn1').textContent='ACKNOWLEDGED';
+  document.getElementById('m-btn1').onclick=closeModal;
+  document.getElementById('m-btn2').textContent='CLOSE';
+  document.getElementById('m-btn2').onclick=closeModal;
+  document.getElementById('modal-ov').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');}
+function closeModalOv(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+
+/* ═══════════════════════════════════════
+   PARTICLES (red/dark)
+═══════════════════════════════════════ */
+function spawnParticles(){
+  const cols=['rgba(204,0,34,.9)','rgba(255,0,51,.8)','rgba(120,0,20,.9)','rgba(255,80,80,.7)','rgba(255,255,255,.4)'];
+  for(let i=0;i<60;i++){
+    const c=document.createElement('div');c.className='particle-fx';
+    const s=4+Math.random()*8;
+    c.style.cssText=`left:${Math.random()*100}%;background:${cols[Math.floor(Math.random()*cols.length)]};width:${s}px;height:${s}px;--dx:${(Math.random()-.5)*250}px;animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*.5}s;border-radius:${Math.random()>.4?'50%':'2px'}`;
+    document.body.appendChild(c);setTimeout(()=>c.remove(),3500);
+  }
+}
+
+/* ═══════════════════════════════════════
+   SOUND + SPEECH
+═══════════════════════════════════════ */
+function snd(t){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    if(t==='correct'){o.frequency.setValueAtTime(440,ctx.currentTime);o.frequency.setValueAtTime(554,ctx.currentTime+.1);o.frequency.setValueAtTime(659,ctx.currentTime+.2);g.gain.setValueAtTime(.2,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);}
+    else if(t==='wrong'){o.frequency.setValueAtTime(180,ctx.currentTime);o.frequency.setValueAtTime(140,ctx.currentTime+.2);g.gain.setValueAtTime(.18,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);}
+    else if(t==='pop'){o.frequency.setValueAtTime(660,ctx.currentTime);g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.1);}
+    else if(t==='complete'){[440,554,659,880].forEach((f,i)=>o.frequency.setValueAtTime(f,ctx.currentTime+i*.12));g.gain.setValueAtTime(.2,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.9);}
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+1);
+  }catch(e){}
+}
+function speak(txt){
+  try{const s=window.speechSynthesis;if(s){const u=new SpeechSynthesisUtterance(txt);u.lang='ja-JP';u.rate=0.75;s.speak(u);}}catch(e){}
+  snd('pop');
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+updateHomeUI();
+</script>
+</body>
+</html>
